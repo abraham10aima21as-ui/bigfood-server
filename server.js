@@ -114,6 +114,37 @@ app.post('/create-payment-intent', async (req, res) => {
         });
       });
     });
+
+    // --- Endpoint SECRETO para que la cafetería vea los pedidos ---
+    // En una app real, esto debería estar protegido con una contraseña.
+    app.get('/ver-pedidos', (req, res) => {
+      console.log("Solicitud recibida para ver los pedidos.");
+      const archivoPedidos = 'pedidos.json';
+
+      fs.readFile(archivoPedidos, 'utf8', (err, data) => {
+        if (err) {
+          // Si el archivo no existe, significa que aún no hay pedidos.
+          if (err.code === 'ENOENT') {
+            console.log("No se encontró pedidos.json, se asume que no hay pedidos.");
+            return res.status(404).send({ message: 'Aún no se han registrado pedidos.' });
+          }
+          // Otro tipo de error al leer el archivo.
+          console.error("Error al leer pedidos.json:", err);
+          return res.status(500).send({ error: 'No se pudieron obtener los pedidos.' });
+        }
+
+        // Si el archivo existe, lo enviamos como respuesta.
+        // El navegador lo mostrará en formato JSON.
+        try {
+          const pedidos = JSON.parse(data);
+          res.json(pedidos);
+        } catch(e) {
+          console.error("Error al parsear el JSON de pedidos.json al visualizar:", e);
+          res.status(500).send({ error: 'El archivo de pedidos parece estar corrupto.' });
+        }
+      });
+    });
+    
     
   
 
