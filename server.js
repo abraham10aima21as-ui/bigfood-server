@@ -66,16 +66,55 @@ app.post('/create-payment-intent', async (req, res) => {
 });
 
     // --- Endpoint para guardar el pedido después de un pago exitoso ---
-app.post('/guardar-pedido', (req, res) => {
-      // Por ahora, solo confirmaremos que la solicitud llegó.
- const nuevoPedido = req.body;
- console.log('Solicitud recibida para guardar el siguiente pedido:', nuevoPedido);
+    // --- Endpoint para guardar el pedido después de un pago exitoso ---
+    app.post('/guardar-pedido', (req, res) => {
+      // 1. Recibimos los datos del pedido desde la app
+      const nuevoPedido = req.body;
+      console.log('Solicitud recibida para guardar el siguiente pedido:', nuevoPedido);
 
-      // Respondemos inmediatamente con éxito para no dejar esperando a la app.
- res.status(200).send({ message: 'Solicitud de guardado recibida por el servidor.' });
+      // 2. Validamos que los datos básicos estén presentes
+      if (!nuevoPedido || !nuevoPedido.clientName || !nuevoPedido.items || !nuevoPedido.paymentId) {
+        // Si faltan datos, no continuamos y respondemos con un error.
+        return res.status(400).send({ error: 'Faltan datos en el pedido.' });
+      }
 
-      // Más adelante, aquí irá la lógica para escribir en el archivo pedidos.json
+      const archivoPedidos = 'pedidos.json';
+
+      // 3. Leemos el archivo de pedidos existente (si lo hay)
+      fs.readFile(archivoPedidos, 'utf8', (err, data) => {
+        let pedidos = [];
+        if (!err && data) {
+          // Si el archivo existe y tiene contenido, lo convertimos a un array
+          try {
+            pedidos = JSON.parse(data);
+            if (!Array.isArray(pedidos)) { // Verificación extra por si el JSON no es un array
+                console.warn("pedidos.json no contenía un array, se reiniciará.");
+                pedidos = [];
+            }
+          } catch (e) {
+            console.error("Error al parsear pedidos.json, se creará un archivo nuevo.", e);
+            // Si el archivo está corrupto, empezamos con un array vacío.
+            pedidos = [];
+          }
+        }
+
+        // 4. Añadimos el nuevo pedido al array
+        pedidos.push(nuevoPedido);
+
+        // 5. Escribimos el array actualizado de vuelta al archivo pedidos.json
+        fs.writeFile(archivoPedidos, JSON.stringify(pedidos, null, 2), 'utf8', (writeErr) => {
+          if (writeErr) {
+            console.error("Error al escribir en pedidos.json:", writeErr);
+            return res.status(500).send({ error: 'No se pudo guardar el pedido en el servidor.' });
+          }
+
+          console.log(`¡Pedido guardado con éxito! El archivo ${archivoPedidos} ha sido actualizado.`);
+          // Respondemos con éxito a la app.
+          res.status(200).send({ message: 'Pedido guardado correctamente.' });
+        });
+      });
     });
+    
   
 
 // --- Configuración del Puerto para Render (con fallback para desarrollo local) ---
