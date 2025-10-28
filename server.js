@@ -2,6 +2,7 @@
 const express = require('express');
 const stripe = require('stripe');
 const cors = require('cors');
+const fs = require('fs');
 
 // --- ¡CONFIGURACIÓN DE SEGURIDAD PARA LA NUBE! ---
 // Lee la clave secreta de Stripe de las variables de entorno del servidor.
@@ -63,6 +64,19 @@ app.post('/create-payment-intent', async (req, res) => {
     res.status(500).send({ error: 'Hubo un problema al contactar al servicio de pagos: ' + e.message });
   }
 });
+
+    // --- Endpoint para guardar el pedido después de un pago exitoso ---
+app.post('/guardar-pedido', (req, res) => {
+      // Por ahora, solo confirmaremos que la solicitud llegó.
+ const nuevoPedido = req.body;
+ console.log('Solicitud recibida para guardar el siguiente pedido:', nuevoPedido);
+
+      // Respondemos inmediatamente con éxito para no dejar esperando a la app.
+ res.status(200).send({ message: 'Solicitud de guardado recibida por el servidor.' });
+
+      // Más adelante, aquí irá la lógica para escribir en el archivo pedidos.json
+    });
+  
 
 // --- Configuración del Puerto para Render (con fallback para desarrollo local) ---
 // Render proveerá el puerto a través de 'process.env.PORT'.
